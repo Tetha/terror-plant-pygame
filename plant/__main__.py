@@ -1,6 +1,8 @@
 
 import collections
+
 import pygame
+import pygame.locals
 
 import plant.main
 
@@ -28,12 +30,12 @@ class EventBus(object):
     def register(self, event_name, listener):
         self.subscribers[event_name].append(listener)
 
-    def fire(self, event_name, event_data=None):
+    def fire(self, event_name, *args, **kwargs):
         current_subs = dict(self.subscribers)
         for k, v in current_subs.iteritems():
             if event_name.startswith(k):
                 for sub in v:
-                    sub.__call__(event_name, event_data)
+                    sub.__call__(event_name, *args, **kwargs)
 
 class EventPrinter(object):
     def __init__(self, ignore=None):
@@ -41,9 +43,9 @@ class EventPrinter(object):
         if ignore:
             self.ignored.extend(ignore)
 
-    def __call__(self, name, data):
+    def __call__(self, name, *args, **kwargs):
         if name not in self.ignored:
-            print "Event %s -> %s" % (name, data)
+            print "Event %s -> %s / %s" % (name, args, kwargs)
 
 class GridDisplay(object):
     def __init__(self, game):
@@ -54,15 +56,33 @@ class GridDisplay(object):
     def create_grid_display(self, event_name, grid):
         for r in xrange(0, grid.height):
             for c in xrange(0, grid.width):
-                self.game.add_display_part(CellDisplay(r, c, 100*r, 100*c))
+                self.game.add_display_part(CellDisplay(self.game, r, c, 100*r, 100*c))
 
+class Button(object):
+    def __init__(self, game, rect, on_click):
+        self.game = game
+        self.rect = rect
+        self.on_click = on_click
+
+        self.game.eventbus.register("input.mouse.click", self.handle_click)
+
+    def handle_click(self, event_name, button, position):
+        if self.rect.collidepoint(position):
+            self.on_click.__call__(button)
+
+    
 class CellDisplay(object):
-    def __init__(self, row, col, x, y):
+    def __init__(self, game, row, col, x, y):
         self.row = row
         self.col = col
 
         self.x = x
         self.y = y
+
+        self.button = Button(game, pygame.Rect(self.x+5, self.y+5, 90, 90), self.clicked)
+
+    def clicked(self, button):
+        print "clicked"
 
     def create_grid(self, event_name, grid):
         self.grid = grid
@@ -81,7 +101,7 @@ class Grid(object):
 
         self.game.eventbus.register("boot", self.create_grid)
 
-    def create_grid(self, event_name, event_data):
+    def create_grid(self, event_name):
         self.game.eventbus.fire("grid.created", self)
 
     def __repr__(self):
@@ -102,10 +122,11 @@ def run():
 
     game.eventbus.fire("boot")
     while running:
-        clock.tick(60)
         event = pygame.event.poll()
         if event.type == pygame.QUIT:
             running = False
+        elif event.type == pygame.locals.MOUSEBUTTONUP:
+            game.eventbus.fire("input.mouse.click", event.button, event.pos)
         screen.fill((0, 0, 0))
         game.draw_all(screen)
         pygame.display.flip()
