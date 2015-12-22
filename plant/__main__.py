@@ -73,6 +73,8 @@ class Button(object):
     
 class CellDisplay(object):
     def __init__(self, game, row, col, x, y):
+        self.game = game
+
         self.row = row
         self.col = col
 
@@ -82,7 +84,7 @@ class CellDisplay(object):
         self.button = Button(game, pygame.Rect(self.x+5, self.y+5, 90, 90), self.clicked)
 
     def clicked(self, button):
-        print "clicked"
+        self.game.eventbus.fire("tile_clicked", self.row, self.col)
 
     def create_grid(self, event_name, grid):
         self.grid = grid
