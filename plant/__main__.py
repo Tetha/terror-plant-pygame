@@ -45,6 +45,9 @@ class GameElement(object):
     def on_event(self, event_name, callback):
         self.game.eventbus.register(event_name, callback)
 
+    def fire_event(self, event_name, *args, **kwargs):
+        self.game.eventbus.fire(event_name, *args, **kwargs)
+
 class EventPrinter(object):
     def __init__(self, ignore=None):
         self.ignored = []
@@ -92,7 +95,7 @@ class CellDisplay(GameElement):
         self.button = Button(game, pygame.Rect(self.x+5, self.y+5, 90, 90), self.clicked)
 
     def clicked(self, button):
-        self.game.eventbus.fire("tile_clicked", self.row, self.col)
+        self.fire_event("tile_clicked", self.row, self.col)
 
     def create_grid(self, event_name, grid):
         self.grid = grid
@@ -112,7 +115,7 @@ class Grid(GameElement):
         self.on_event("boot", self.create_grid)
 
     def create_grid(self, event_name):
-        self.game.eventbus.fire("grid.created", self)
+        self.fire_event("grid.created", self)
 
     def __repr__(self):
         return "Grid(width=%d,height=%d,grid=%s)" % (self.width, self.height, self.grid)
