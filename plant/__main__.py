@@ -37,6 +37,14 @@ class EventBus(object):
                 for sub in v:
                     sub.__call__(event_name, *args, **kwargs)
 
+class GameElement(object):
+    def __init__(self, game):
+        self.game = game
+
+
+    def on_event(self, event_name, callback):
+        self.game.eventbus.register(event_name, callback)
+
 class EventPrinter(object):
     def __init__(self, ignore=None):
         self.ignored = []
@@ -47,33 +55,33 @@ class EventPrinter(object):
         if name not in self.ignored:
             print "Event %s -> %s / %s" % (name, args, kwargs)
 
-class GridDisplay(object):
+class GridDisplay(GameElement):
     def __init__(self, game):
-        self.game = game
+        super(GridDisplay, self).__init__(game)
 
-        self.game.eventbus.register("grid.created", self.create_grid_display)
+        self.on_event("grid.created", self.create_grid_display)
 
     def create_grid_display(self, event_name, grid):
         for r in xrange(0, grid.height):
             for c in xrange(0, grid.width):
                 self.game.add_display_part(CellDisplay(self.game, r, c, 100*r, 100*c))
 
-class Button(object):
+class Button(GameElement):
     def __init__(self, game, rect, on_click):
-        self.game = game
+        super(Button, self).__init__(game)
         self.rect = rect
         self.on_click = on_click
 
-        self.game.eventbus.register("input.mouse.click", self.handle_click)
+        self.on_event("input.mouse.click", self.handle_click)
 
     def handle_click(self, event_name, button, position):
         if self.rect.collidepoint(position):
             self.on_click.__call__(button)
 
     
-class CellDisplay(object):
+class CellDisplay(GameElement):
     def __init__(self, game, row, col, x, y):
-        self.game = game
+        super(CellDisplay, self).__init__(game)
 
         self.row = row
         self.col = col
@@ -93,15 +101,15 @@ class CellDisplay(object):
         rect = pygame.Rect(self.x+5, self.y+5, 90, 90)
         screen.fill((0, 255, 0), rect)
         
-class Grid(object):
+class Grid(GameElement):
     def __init__(self, game):
-        self.game = game
+        super(Grid, self).__init__(game)
 
         self.width = 5
         self.height = 5
         self.grid = collections.defaultdict(None)
 
-        self.game.eventbus.register("boot", self.create_grid)
+        self.on_event("boot", self.create_grid)
 
     def create_grid(self, event_name):
         self.game.eventbus.fire("grid.created", self)
