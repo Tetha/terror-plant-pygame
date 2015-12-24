@@ -40,7 +40,7 @@ class EventBus(object):
 class GameElement(object):
     def __init__(self, game):
         self.game = game
-
+        self.display_part = None
 
     def on_event(self, event_name, callback):
         self.game.eventbus.register(event_name, callback)
@@ -48,6 +48,26 @@ class GameElement(object):
     def fire_event(self, event_name, *args, **kwargs):
         self.game.eventbus.fire(event_name, *args, **kwargs)
 
+    def add_placeholder_sprite(self):
+        self.display_part = PlaceHolderSprite()
+        self.game.add_display_part(self.display_part)
+        
+
+class PlaceHolderSprite(object):
+    def __init__(self):
+        self.x = 0
+        self.y = 0
+
+        self.width = 100
+        self.height = 100
+
+        self.margin = 5
+
+    def draw(self, screen):
+        rect = pygame.Rect(self.x+self.margin/2, self.y+self.margin/2, self.width-self.margin/2, self.height-self.margin/2)
+
+        screen.fill((0, 255, 0), rect)
+        
 class EventPrinter(object):
     def __init__(self, ignore=None):
         self.ignored = []
@@ -67,7 +87,7 @@ class GridDisplay(GameElement):
     def create_grid_display(self, event_name, grid):
         for r in xrange(0, grid.height):
             for c in xrange(0, grid.width):
-                self.game.add_display_part(CellDisplay(self.game, r, c, 100*r, 100*c))
+                CellDisplay(self.game, r, c, 100*r, 100*c)
 
 class Button(GameElement):
     def __init__(self, game, rect, on_click):
@@ -94,15 +114,18 @@ class CellDisplay(GameElement):
 
         self.button = Button(game, pygame.Rect(self.x+5, self.y+5, 90, 90), self.clicked)
 
+        self.add_placeholder_sprite()
+        self.display_part.x = x
+        self.display_part.y = y
+        self.display_part.width = 100
+        self.display_part.height = 100
+        self.display_part.margin = 10
+
     def clicked(self, button):
         self.fire_event("tile_clicked", self.row, self.col)
 
     def create_grid(self, event_name, grid):
         self.grid = grid
-
-    def draw(self, screen):
-        rect = pygame.Rect(self.x+5, self.y+5, 90, 90)
-        screen.fill((0, 255, 0), rect)
         
 class Grid(GameElement):
     def __init__(self, game):
