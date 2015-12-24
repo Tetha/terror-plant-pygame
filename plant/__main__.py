@@ -65,6 +65,8 @@ class PlaceHolderSprite(object):
 
         self.margin = 5
 
+        self.marker = None
+
     @property
     def rect(self):
         return pygame.Rect(self.x+self.margin/2, self.y+self.margin/2, self.width-self.margin/2, self.height-self.margin/2)
@@ -76,8 +78,12 @@ class PlaceHolderSprite(object):
         self.on_click.__call__(button)
 
     def draw(self, screen):
-
         screen.fill((0, 255, 0), self.rect)
+
+        if self.marker is not None:
+            font = pygame.font.SysFont('Arial', 12)
+            textsur = font.render(self.marker, False, (0, 0, 0))
+            screen.blit(textsur, self.rect)
         
 class EventPrinter(object):
     def __init__(self, ignore=None):
@@ -129,6 +135,7 @@ class CellDisplay(GameElement):
         self.display_part.width = 100
         self.display_part.height = 100
         self.display_part.margin = 10
+        self.display_part.marker = "PLAINS"
 
         self.display_part.enable_clicks()
         self.display_part.on_click = self.clicked
@@ -156,6 +163,8 @@ class Grid(GameElement):
         return "Grid(width=%d,height=%d,grid=%s)" % (self.width, self.height, self.grid)
 
 def run():
+    pygame.init()
+
     game = GameContainer()
     screen = pygame.display.set_mode((800, 600))
     clock = pygame.time.Clock()
@@ -166,7 +175,6 @@ def run():
 
     Grid(game)
     GridDisplay(game)
-
 
     game.eventbus.fire("boot")
     while running:
