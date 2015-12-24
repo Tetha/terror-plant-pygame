@@ -67,6 +67,11 @@ class PlaceHolderSprite(object):
 
         self.marker = None
 
+        self.red = 0
+        self.green = 255 
+        self.blue = 0
+
+
     @property
     def rect(self):
         return pygame.Rect(self.x+self.margin/2, self.y+self.margin/2, self.width-self.margin/2, self.height-self.margin/2)
@@ -78,7 +83,7 @@ class PlaceHolderSprite(object):
         self.on_click.__call__(button)
 
     def draw(self, screen):
-        screen.fill((0, 255, 0), self.rect)
+        screen.fill((self.red, self.green, self.blue), self.rect)
 
         if self.marker is not None:
             font = pygame.font.SysFont('Arial', 12)
@@ -119,6 +124,20 @@ class Button(GameElement):
             self.on_click.__call__(button)
 
     
+class BuyLeafButton(GameElement):
+    def __init__(self, game):
+        super(BuyLeafButton, self).__init__(game)
+
+        self.add_placeholder_sprite()
+        self.display_part.x = 550
+        self.display_part.y = 100
+
+        self.display_part.red = 0
+        self.display_part.green = 0
+        self.display_part.blue = 255
+
+        self.display_part.marker = "GROW LEAF"
+
 class CellDisplay(GameElement):
     def __init__(self, game, row, col, x, y):
         super(CellDisplay, self).__init__(game)
@@ -199,6 +218,7 @@ def run():
 
     Grid(game)
     GridDisplay(game)
+    BuyLeafButton(game)
 
     game.eventbus.fire("boot")
     while running:
