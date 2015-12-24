@@ -224,8 +224,7 @@ class Grid(GameElement):
         else:
             self.grid[(row, col)] = new_type
 
-        for observer in self.game.all_with('tile_observer'):
-            observer.tile_updated(row, col, new_type)
+        self.game.all_with('tile_observer').call(lambda e: e.tile_updated(row, col, new_type))
 
     def __repr__(self):
         return "Grid(width=%d,height=%d,grid=%s)" % (self.width, self.height, self.grid)
