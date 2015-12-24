@@ -49,12 +49,14 @@ class GameElement(object):
         self.game.eventbus.fire(event_name, *args, **kwargs)
 
     def add_placeholder_sprite(self):
-        self.display_part = PlaceHolderSprite()
+        self.display_part = PlaceHolderSprite(self.game)
         self.game.add_display_part(self.display_part)
         
 
 class PlaceHolderSprite(object):
-    def __init__(self):
+    def __init__(self, game):
+        self.game = game
+
         self.x = 0
         self.y = 0
 
@@ -63,10 +65,19 @@ class PlaceHolderSprite(object):
 
         self.margin = 5
 
-    def draw(self, screen):
-        rect = pygame.Rect(self.x+self.margin/2, self.y+self.margin/2, self.width-self.margin/2, self.height-self.margin/2)
+    @property
+    def rect(self):
+        return pygame.Rect(self.x+self.margin/2, self.y+self.margin/2, self.width-self.margin/2, self.height-self.margin/2)
+    
+    def enable_clicks(self):
+        self.button = Button(self.game, self.rect, self.clicked)
 
-        screen.fill((0, 255, 0), rect)
+    def clicked(self, button):
+        self.on_click.__call__(button)
+
+    def draw(self, screen):
+
+        screen.fill((0, 255, 0), self.rect)
         
 class EventPrinter(object):
     def __init__(self, ignore=None):
@@ -112,14 +123,15 @@ class CellDisplay(GameElement):
         self.x = x
         self.y = y
 
-        self.button = Button(game, pygame.Rect(self.x+5, self.y+5, 90, 90), self.clicked)
-
         self.add_placeholder_sprite()
         self.display_part.x = x
         self.display_part.y = y
         self.display_part.width = 100
         self.display_part.height = 100
         self.display_part.margin = 10
+
+        self.display_part.enable_clicks()
+        self.display_part.on_click = self.clicked
 
     def clicked(self, button):
         self.fire_event("tile_clicked", self.row, self.col)
