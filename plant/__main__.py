@@ -140,21 +140,45 @@ class CellDisplay(GameElement):
         self.display_part.enable_clicks()
         self.display_part.on_click = self.clicked
 
+        self.on_event("grid.tile.%d.%d.updated" % (self.row, self.col), self.tile_updated)
+
     def clicked(self, button):
         self.fire_event("tile_clicked", self.row, self.col)
 
-    def create_grid(self, event_name, grid):
-        self.grid = grid
-        
+    def tile_updated(self, event_name, new_field_type):
+        if new_field_type is None:
+            self.display_part.marker = "PLAINS"
+        else:
+            self.display_part.marker = new_field_type
+
 class Grid(GameElement):
     def __init__(self, game):
         super(Grid, self).__init__(game)
 
         self.width = 5
         self.height = 5
-        self.grid = collections.defaultdict(None)
+        self.grid = {} 
 
         self.on_event("boot", self.create_grid)
+        self.on_event("tile_clicked", self.change_tile)
+
+    def field_type(self, row, column):
+        return self.grid.get((row, column), None)
+
+    def change_tile(self, event_name, row, column):
+        if self.field_type(row, column) is None:
+            new_type = "TOWN"
+        else:
+            new_type = None
+
+        self.set_field_type(row, column, new_type)
+
+    def set_field_type(self, row, col, new_type):
+        if new_type is None:
+            del self.grid[(row, col)]
+        else:
+            self.grid[(row, col)] = new_type
+        self.fire_event("grid.tile.%d.%d.updated" % (row, col), new_type)        
 
     def create_grid(self, event_name):
         self.fire_event("grid.created", self)
@@ -178,11 +202,12 @@ def run():
 
     game.eventbus.fire("boot")
     while running:
-        event = pygame.event.poll()
-        if event.type == pygame.QUIT:
-            running = False
-        elif event.type == pygame.locals.MOUSEBUTTONUP:
-            game.eventbus.fire("input.mouse.click", event.button, event.pos)
+        clock.tick(120)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            elif event.type == pygame.locals.MOUSEBUTTONUP:
+                game.eventbus.fire("input.mouse.click", event.button, event.pos)
         screen.fill((0, 0, 0))
         game.draw_all(screen)
         pygame.display.flip()
