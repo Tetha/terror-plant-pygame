@@ -8,7 +8,7 @@ import plant.main
 
 FieldType = collections.namedtuple('FieldType', ['is_plant', 'can_grow'])
 
-class FieldTypes:
+class FieldTypes(object):
     Plains = FieldType(is_plant=False, can_grow=True)
 
     Leaf = FieldType(is_plant=True, can_grow=False)
@@ -16,6 +16,21 @@ class FieldTypes:
 
     Town = FieldType(is_plant=False, can_grow=False)
     Army = FieldType(is_plant=False, can_grow=False)
+
+class Coordinate(object):
+    def __init__(self, row, col):
+        self.row = row
+        self.col = col
+
+    @property
+    def neighbours(self):
+        return [(self.row-1, self.col), (self.row+1, col), (self.row, col-1), (self.row, col+1)]
+
+    def __hash__(self):
+        return self.row*31 + self.col
+
+    def __eq__(self, position):
+        return self.row == position.row and self.col == position.col
 
 class GameContainer(object):
     def __init__(self):
@@ -140,7 +155,7 @@ class GridDisplay(GameElement):
 
         for r in xrange(0, grid.height):
             for c in xrange(0, grid.width):
-                CellDisplay(self.game, r, c, 100*r, 100*c)
+                CellDisplay(self.game, Coordinate(r, c), 100*r, 100*c)
 
 class Button(GameElement):
     def __init__(self, game, on_click):
@@ -177,11 +192,10 @@ class BuyLeafButton(GameElement):
         self.display_part.marker = "GROW LEAF"
 
 class CellDisplay(GameElement):
-    def __init__(self, game, row, col, x, y):
+    def __init__(self, game, position, x, y):
         super(CellDisplay, self).__init__(game)
 
-        self.row = row
-        self.col = col
+        self.position = position
 
         self.x = x
         self.y = y
@@ -205,10 +219,10 @@ class CellDisplay(GameElement):
         self.add_tag('tile_observer')
 
     def clicked(self, button):
-        self.game.all_with('grid').call(lambda e: e.change_tile(self.row, self.col))
+        self.game.all_with('grid').call(lambda e: e.change_tile(self.position))
 
-    def tile_updated(self, row, col, new_field_type):
-        if row != self.row or col != self.col:
+    def tile_updated(self, position, new_field_type):
+        if position != self.position:
             return
 
 
@@ -226,34 +240,31 @@ class Grid(GameElement):
 
         for row in xrange(0, self.height):
             for col in xrange(0, self.width):
-                self.grid[(row, col)] = FieldTypes.Plains
+                self.grid[Coordinate(row, col)] = FieldTypes.Plains
 
         self.add_tag('grid')
 
-    def field_type(self, row, column):
-        return self.grid.get((row, column), None)
+    def field_type(self, position):
+        return self.grid.get(position, None)
 
-    def change_tile(self, row, column):
-        if self.field_type(row, column) is FieldTypes.Plains:
+    def change_tile(self, position):
+        if self.field_type(position) is FieldTypes.Plains:
             new_type = FieldTypes.Town
         else:
             new_type = FieldTypes.Plains
 
-        self.set_field_type(row, column, new_type)
+        self.set_field_type(position, new_type)
 
-    def set_field_type(self, row, col, new_type):
-        self.grid[(row, col)] = new_type
-        self.game.all_with('tile_observer').call(lambda e: e.tile_updated(row, col, new_type))
+    def set_field_type(self, position, new_type):
+        self.grid[position] = new_type
+        self.game.all_with('tile_observer').call(lambda e: e.tile_updated(position, new_type))
 
-    def is_plant(self, row, col):
-        return False # TODO
-
-    def can_grow_plant(self, row, col):
-        if not self.field_type(row, col).can_grow():
+    def can_grow_plant(self, position):
+        if not self.field_type(position).can_grow():
             return False
 
-        return any(self.field_type(neighbourRow, neighbourCol).is_plant()
-                   for (neighbourRow, neighbourCol) in [(row-1, col), (row+1, col), (row, col-1), (row, col+1)])
+        return any(self.field_type(neighbour).is_plant()
+                   for neighbour in position.neighbours)
 
     def __repr__(self):
         return "Grid(width=%d,height=%d,grid=%s)" % (self.width, self.height, self.grid)
