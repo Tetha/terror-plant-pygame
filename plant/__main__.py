@@ -9,6 +9,8 @@ import plant.main
 FieldType = collections.namedtuple('FieldType', ['is_plant', 'can_grow'])
 
 class FieldTypes(object):
+    Border = FieldType(is_plant=False, can_grow=False)
+
     Plains = FieldType(is_plant=False, can_grow=True)
 
     Leaf = FieldType(is_plant=True, can_grow=False)
@@ -245,7 +247,7 @@ class Grid(GameElement):
         self.add_tag('grid')
 
     def field_type(self, position):
-        return self.grid.get(position, None)
+        return self.grid.get(position, FieldTypes.Border)
 
     def change_tile(self, position):
         if self.field_type(position) is FieldTypes.Plains:
