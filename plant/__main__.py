@@ -90,6 +90,15 @@ class PlaceHolderSprite(object):
         self.blue = 0
 
 
+
+    @property
+    def color(self):
+        return (self.red, self.green, self.blue)
+
+    @color.setter
+    def color(self, new_color):
+        self.red, self.green, self.blue = new_color
+
     @property
     def rect(self):
         return pygame.Rect(self.x+self.margin/2, self.y+self.margin/2, self.width-self.margin/2, self.height-self.margin/2)
@@ -152,9 +161,7 @@ class BuyLeafButton(GameElement):
         self.display_part.x = 550
         self.display_part.y = 100
 
-        self.display_part.red = 0
-        self.display_part.green = 0
-        self.display_part.blue = 255
+        self.display_part.color = (0, 200, 0)
 
         self.display_part.marker = "GROW LEAF"
 
@@ -174,6 +181,7 @@ class CellDisplay(GameElement):
         self.display_part.width = 100
         self.display_part.height = 100
         self.display_part.margin = 10
+        self.display_part.color = (0, 255, 0)
         self.display_part.marker = "PLAINS"
 
         self.enable_clicks()
