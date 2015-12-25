@@ -6,6 +6,17 @@ import pygame.locals
 
 import plant.main
 
+FieldType = collections.namedtuple('FieldType', ['is_plant', 'can_grow'])
+
+class FieldTypes:
+    Plains = FieldType(is_plant=False, can_grow=True)
+
+    Leaf = FieldType(is_plant=True, can_grow=False)
+    Sapling = FieldType(is_plant=True, can_grow=False)
+
+    Town = FieldType(is_plant=False, can_grow=False)
+    Army = FieldType(is_plant=False, can_grow=False)
+
 class GameContainer(object):
     def __init__(self):
         self.entities = EntitySet()
@@ -200,10 +211,10 @@ class CellDisplay(GameElement):
         if row != self.row or col != self.col:
             return
 
-        if new_field_type is None:
-            self.display_part.marker = "PLAINS"
-        else:
-            self.display_part.marker = new_field_type
+
+        for key, value in FieldTypes.__dict__.iteritems():
+            if value is new_field_type:
+                self.display_part.marker = key
 
 class Grid(GameElement):
     def __init__(self, game):
@@ -213,26 +224,36 @@ class Grid(GameElement):
         self.height = 5
         self.grid = {} 
 
+        for row in xrange(0, self.height):
+            for col in xrange(0, self.width):
+                self.grid[(row, col)] = FieldTypes.Plains
+
         self.add_tag('grid')
 
     def field_type(self, row, column):
         return self.grid.get((row, column), None)
 
     def change_tile(self, row, column):
-        if self.field_type(row, column) is None:
-            new_type = "TOWN"
+        if self.field_type(row, column) is FieldTypes.Plains:
+            new_type = FieldTypes.Town
         else:
-            new_type = None
+            new_type = FieldTypes.Plains
 
         self.set_field_type(row, column, new_type)
 
     def set_field_type(self, row, col, new_type):
-        if new_type is None:
-            del self.grid[(row, col)]
-        else:
-            self.grid[(row, col)] = new_type
-
+        self.grid[(row, col)] = new_type
         self.game.all_with('tile_observer').call(lambda e: e.tile_updated(row, col, new_type))
+
+    def is_plant(self, row, col):
+        return False # TODO
+
+    def can_grow_plant(self, row, col):
+        if not self.field_type(row, col).can_grow():
+            return False
+
+        return any(self.field_type(neighbourRow, neighbourCol).is_plant()
+                   for (neighbourRow, neighbourCol) in [(row-1, col), (row+1, col), (row, col-1), (row, col+1)])
 
     def __repr__(self):
         return "Grid(width=%d,height=%d,grid=%s)" % (self.width, self.height, self.grid)
